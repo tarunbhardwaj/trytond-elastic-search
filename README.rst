@@ -4,15 +4,11 @@ Elastic Search Full Text Search Integration
 This module allows tryton records of selected models to be exported to
 `Elastic Search <http://www.elasticsearch.org/>`_ full text search engine.
 
-.. image:: https://travis-ci.org/openlabs/trytond-elastic-search.png?branch=develop
-   :target: https://travis-ci.org/openlabs/trytond-elastic-search
-
-
 Configuration
 -------------
 
 1. Add a new configuration line to trytond.conf
-   `elastic_search_server=es.openlabs.co.in`
+   `elastic_search_server=es.fulfil.io`
 2. Add the models you want to index into document types. `Administration >
    Elastic Search > Document Types`
 
@@ -55,20 +51,3 @@ of such a method in the product model is below.
                 'category': self.category.id,
                 'category_name': self.category.name,
             }
-
-
-Can I use this in production ?
-``````````````````````````````
-
-Yes and No.
-
-Yes because:
-
-  * We use this in production, on a couple of implementations but we are
-    still learning from the results.
-
-No because:
-
-  * There are no tests yet!
-  * We (`Openlabs <http://openlabs.co.in>`_) might chnage the API in
-    future.

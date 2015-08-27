@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    configuration
-
-    :copyright: © 2014 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
-"""
 import json
 import logging
 
