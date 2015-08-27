@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# This file is part of Tryton.  The COPYRIGHT file at the top level of
-# this repository contains the full copyright notices and license terms.
 import sys
 import re
 import os
@@ -73,9 +71,9 @@ setup(
     version=info.get('version', '0.0.1'),
     description='Tryton module for Elastic Search',
     long_description=read('README.rst'),
-    author='Tryton',
-    author_email='info@openlabs.co.in',
-    url='https://github.com/openlabs/trytond-elastic-search',
+    author='Fulfil.IO Inc.',
+    author_email='support@fulfil.io',
+    url='https://www.fulfil.io',
     package_dir={'trytond.modules.elastic_search': '.'},
     packages=[
         'trytond.modules.elastic_search',
@@ -93,14 +91,14 @@ setup(
         'Intended Audience :: Financial and Insurance Industry',
         'Intended Audience :: Legal Industry',
         'Intended Audience :: Manufacturing',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'License :: OSI Approved :: BSD Licens',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business',
     ],
-    license='GPL-3',
+    license='BSD',
     install_requires=requires,
     zip_safe=False,
     entry_points="""

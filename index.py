@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-    index
-
-    Elastic search by default has indexes and types.
-
-    :copyright: © 2013-2014 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
-"""
 import json
 
 from pyes.exceptions import NotFoundException
