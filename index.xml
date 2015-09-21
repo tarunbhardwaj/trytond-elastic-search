@@ -88,7 +88,7 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">Elastic Search Index</field>
             <field name="request_user" ref="res.user_admin"/>
             <field name="user" ref="user_update_index"/>
-            <field name="active" eval="True"/>
+            <field name="active" eval="False"/>
             <field name="interval_number">1</field>
             <field name="interval_type">minutes</field>
             <field name="number_calls">-1</field>
