@@ -77,7 +77,7 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
         """
         Return the default index from config
         """
-        return Transaction().cursor.dbname
+        return Transaction().database.name
 
     def get_index_name(self, name):
         """

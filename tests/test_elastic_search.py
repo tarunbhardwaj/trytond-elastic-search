@@ -1,77 +1,64 @@
 # -*- coding: utf-8 -*-
-import time
 import unittest
-from pyes import TermQuery
 
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT, test_view,\
-    test_depends
-from trytond.transaction import Transaction
+from trytond.tests.test_tryton import POOL, with_transaction, ModuleTestCase
 from trytond.config import config
+
 
 config.add_section('elastic_search')
 config.set('elastic_search', 'server_uri', 'http://localhost:9200')
 
 
-class IndexBacklogTestCase(unittest.TestCase):
+class IndexBacklogTestCase(ModuleTestCase):
     """
     Tests Index Backlog
     """
+    module = 'elastic_search'
+
     def setUp(self):
         trytond.tests.test_tryton.install_module('elastic_search')
         self.IndexBacklog = POOL.get('elasticsearch.index_backlog')
         self.Configuration = POOL.get('elasticsearch.configuration')
         self.User = POOL.get('res.user')
 
-    def test0005views(self):
-        '''
-        Test views.
-        '''
-        test_view('elastic_search')
-
-    def test0006depends(self):
-        '''
-        Test depends.
-        '''
-        test_depends()
-
+    @with_transaction()
     def test_0010_create_IndexBacklog(self):
         """
         Creates index backlog and updates remote elastic search index
         """
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.Configuration(1).save()
-            users = self.User.create([{
-                'name': 'user1', 'login': 'user1'
-            }, {
-                'name': 'user2', 'login': 'user2'
-            }])
-            # Adds list of active records to IndexBacklog
-            self.IndexBacklog.create_from_records(users)
-            self.assertEqual(len(self.IndexBacklog.search([])), 2)
-            # Updates the remote elastic search index from backlog and deletes
-            # the backlog entries
-            self.IndexBacklog.update_index()
-            self.assertEqual(len(self.IndexBacklog.search([])), 0)
+        self.Configuration(1).save()
+        users = self.User.create([{
+            'name': 'user1', 'login': 'user1'
+        }, {
+            'name': 'user2', 'login': 'user2'
+        }])
+        # Adds list of active records to IndexBacklog
+        self.IndexBacklog.create_from_records(users)
+        self.assertEqual(len(self.IndexBacklog.search([])), 2)
+        # Updates the remote elastic search index from backlog and deletes
+        # the backlog entries
+        self.IndexBacklog.update_index()
+        self.assertEqual(len(self.IndexBacklog.search([])), 0)
 
+    @with_transaction()
     def test_0900_batch_indexing(self):
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.Configuration(1).save()
-            users = self.User.create([
-                {
-                    'name': 'user%s' % index,
-                    'login': 'user%s' % index,
-                } for index in xrange(1, 201)
-            ])
-            # Adds list of active records to IndexBacklog
-            self.IndexBacklog.create_from_records(users)
-            self.assertEqual(len(self.IndexBacklog.search([])), 200)
-            # Updates the remote elastic search index from backlog and deletes
-            # the backlog entries. Default batch size of 100.
-            self.IndexBacklog.update_index()
-            self.assertEqual(len(self.IndexBacklog.search([])), 100)
-            self.IndexBacklog.update_index()
-            self.assertEqual(len(self.IndexBacklog.search([])), 0)
+        self.Configuration(1).save()
+        users = self.User.create([
+            {
+                'name': 'user%s' % index,
+                'login': 'user%s' % index,
+            } for index in xrange(1, 201)
+        ])
+        # Adds list of active records to IndexBacklog
+        self.IndexBacklog.create_from_records(users)
+        self.assertEqual(len(self.IndexBacklog.search([])), 200)
+        # Updates the remote elastic search index from backlog and deletes
+        # the backlog entries. Default batch size of 100.
+        self.IndexBacklog.update_index()
+        self.assertEqual(len(self.IndexBacklog.search([])), 100)
+        self.IndexBacklog.update_index()
+        self.assertEqual(len(self.IndexBacklog.search([])), 0)
 
 
 class DocumentTypeTestCase(unittest.TestCase):
@@ -125,67 +112,43 @@ class DocumentTypeTestCase(unittest.TestCase):
             }
         ])
 
+    @with_transaction()
     def test_create_update(self):
         '''
         Test registering/unregistering of models for indexing
         '''
+        defaults = self.create_defaults()
+        dt1 = defaults['document_type1']
+        dt2 = defaults['document_type2']
 
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            defaults = self.create_defaults()
-            dt1 = defaults['document_type1']
-            dt2 = defaults['document_type2']
+        # update document and check if new trigger is created
+        trigger1_id = dt1.trigger.id
+        self.DocumentType.write([dt1], {'name': 'testdoc'})
+        triggers = self.Trigger.search([
+            ('id', '=', trigger1_id)
+        ])
+        self.assertEqual(len(triggers), 0)
+        triggers = self.Trigger.search([
+            ('name', '=', 'elasticsearch_testdoc')
+        ])
+        self.assertEqual(len(triggers), 1)
 
-            # update document and check if new trigger is created
-            trigger1_id = dt1.trigger.id
-            self.DocumentType.write([dt1], {'name': 'testdoc'})
-            triggers = self.Trigger.search([
-                ('id', '=', trigger1_id)
-            ])
-            self.assertEqual(len(triggers), 0)
-            triggers = self.Trigger.search([
-                ('name', '=', 'elasticsearch_testdoc')
-            ])
-            self.assertEqual(len(triggers), 1)
+        # remove the model and check trigger
+        trigger2_id = dt2.trigger.id
+        self.DocumentType.delete([dt2])
+        triggers = self.Trigger.search([('id', '=', trigger2_id)])
+        self.assertEqual(len(triggers), 0)
 
-            # remove the model and check trigger
-            trigger2_id = dt2.trigger.id
-            self.DocumentType.delete([dt2])
-            triggers = self.Trigger.search([('id', '=', trigger2_id)])
-            self.assertEqual(len(triggers), 0)
-
+    @with_transaction()
     def test_trigger(self):
         '''
         Test if trigger is invoked and do call handler appropriately
         '''
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.create_defaults()
-            backlog_old_len = self.IndexBacklog.search([], count=True)
-            self.create_users()
-            backlog_new_len = self.IndexBacklog.search([], count=True)
-            self.assertEqual(backlog_old_len + 2, backlog_new_len)
-
-    def test_delete(self):
-        '''
-        Test if records are deleted from remove elastic server
-        '''
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            self.create_defaults()
-            users = self.create_users()
-            self.assertEqual(len(self.IndexBacklog.search([])), 2)
-            self.IndexBacklog.update_index()
-            self.assertEqual(len(self.IndexBacklog.search([])), 0)
-
-            time.sleep(2)  # wait for changes to reach search server
-            conn = self.Configuration.get_es_connection()
-            result = conn.search(query=TermQuery('rec_name', 'testuser'))
-            self.assertEqual(len(result), 1)
-
-            self.User.delete(users)
-            self.assertEqual(len(self.IndexBacklog.search([])), 2)
-            self.IndexBacklog.update_index()
-            time.sleep(2)  # wait for changes to reach search server
-            result = conn.search(query=TermQuery('rec_name', 'testuser'))
-            self.assertEqual(len(result), 0)
+        self.create_defaults()
+        backlog_old_len = self.IndexBacklog.search([], count=True)
+        self.create_users()
+        backlog_new_len = self.IndexBacklog.search([], count=True)
+        self.assertEqual(backlog_old_len + 2, backlog_new_len)
 
 
 def suite():

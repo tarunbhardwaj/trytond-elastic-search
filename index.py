@@ -210,7 +210,7 @@ class DocumentType(ModelSQL, ModelView):
             'on_write': True,
             'on_delete': True,
             'action_model': action_model.id,
-            'condition': 'True',
+            'condition': 'true',
             'action_function': '_trigger_handler',
         }])[0]
 
