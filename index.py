@@ -33,9 +33,11 @@ class IndexBacklog(ModelSQL, ModelView):
 
         :param record: List of active records to be indexed
         """
+        IndexBacklog = Pool().get('elasticsearch.index_backlog')
+
         vlist = []
         for record in records:
-            if not cls.search([
+            if not IndexBacklog.search([
                     ('record_model', '=', record.__name__),
                     ('record_id', '=', record.id),
             ], limit=1):
@@ -43,7 +45,7 @@ class IndexBacklog(ModelSQL, ModelView):
                     'record_model': record.__name__,
                     'record_id': record.id,
                 })
-        return cls.create(vlist)
+        return IndexBacklog.create(vlist)
 
     @staticmethod
     def _build_default_doc(record):
@@ -68,11 +70,12 @@ class IndexBacklog(ModelSQL, ModelView):
 
         That depends on your specific implementation and index size.
         """
+        IndexBacklog = Pool().get('elasticsearch.index_backlog')
         config = Pool().get('elasticsearch.configuration')(1)
 
         conn = config.get_es_connection()
 
-        for item in cls.search_read(
+        for item in IndexBacklog.search_read(
                 [], order=[('id', 'DESC')], limit=batch_size,
                 fields_names=['record_model', 'record_id', 'id']):
 
@@ -98,7 +101,7 @@ class IndexBacklog(ModelSQL, ModelView):
                     data = record.elastic_search_json()
                 else:
                     # A model without elastic_search_json
-                    data = cls._build_default_doc(record)
+                    data = IndexBacklog._build_default_doc(record)
 
                 conn.index(
                     data,
@@ -108,7 +111,7 @@ class IndexBacklog(ModelSQL, ModelView):
                 )
             finally:
                 # Delete the item since it has been sent to the index
-                cls.delete([cls(item['id'])])
+                IndexBacklog.delete([cls(item['id'])])
 
 
 class DocumentType(ModelSQL, ModelView):
